@@ -1,0 +1,678 @@
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'q7TU8tRM6QfSrqhHxSD94MOTFsE2'
+    and date = date('2024-01-18')
+    and account_id = 9491
+;
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'q7TU8tRM6QfSrqhHxSD94MOTFsE2'
+    and date = date('2024-01-18')
+;
+select
+*
+from prod.bi.loan_book where user_id = 'q7TU8tRM6QfSrqhHxSD94MOTFsE2'
+
+// got 2 R01 on 2024-01-18
+// strange... he transferd all of his money to another account....
+// not DQ - good user
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^q7TU8tRM6QfSrqhHxSD94MOTFsE2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'C7xbXnnAnSa7EGuhUlT9HfuIOYb2'
+    and (date = date('2024-01-18') or date = date('2024-01-11'))
+;
+select
+*
+from prod.bi.loan_book where user_id = 'C7xbXnnAnSa7EGuhUlT9HfuIOYb2'
+
+// this user has 2 R01 with the same account- on 2024-01-11 & 2024-01-18 
+
+// first one in 2024-01-11 understandable -  [balance - anount - spent < 0]
+
+// secound one in 2024-01-18 not understandable - [balance - anount - spent > 2000 ] 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^C7xbXnnAnSa7EGuhUlT9HfuIOYb2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'Otfg0Es3gCc3K1iSujuQYqtBFLJ3'
+    and (date = date('2024-01-29') or date = date('2024-01-17'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+where user_id like 'Otfg0Es3gCc3K1iSujuQYqtBFLJ3' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+;
+select
+*
+from prod.bi.loan_book where user_id = 'Otfg0Es3gCc3K1iSujuQYqtBFLJ3'
+;
+// first one in 2024-01-17 understandable -  [balance - amount - spent < 0]
+
+//but on the days before he got an NSF on fee payment , and 4 NSF afterwards ... 
+
+// then on the 29th understandable R01 - [balance - amount - spent < 0]  
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^Otfg0Es3gCc3K1iSujuQYqtBFLJ3^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'R3p0rJXJRDb7kHMbI5c1g8g04z13'
+    and (date = date('2024-01-03'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+where user_id like 'R3p0rJXJRDb7kHMbI5c1g8g04z13' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+// this user had a lot of NSF and on the same day we succefully charged him the prior payment...
+
+// now he has a lot in his account and made a big paycheck to cover all payments ...
+
+// we also charged him succefully 24+24+250 on the day of the R01. 
+
+// so the only logical thing here is that he first spent his money and then we tried to charge and after wards his paycheck realy got into the balance .
+
+// [balance - amount - OutTransactions < 0]
+
+// we tried to charge twice and got 2 R01 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^R3p0rJXJRDb7kHMbI5c1g8g04z13^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'T9Xgrf9fCKNFWfHQq0WQjdP6KdT2'
+    and (date = date('2024-01-03'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+where user_id like 'T9Xgrf9fCKNFWfHQq0WQjdP6KdT2' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0]
+
+// we tried to charge twice and got 2 R01 
+
+// he had some NSF the prior month but is genraly good customer
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^T9Xgrf9fCKNFWfHQq0WQjdP6KdT2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'V1bsAr3eapW8E7ml3fbiCcZD3Ov1'
+    and (date = date('2024-01-24'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'V1bsAr3eapW8E7ml3fbiCcZD3Ov1' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0]
+
+// a lot of transaction on two accounts and some in between accounts transaction ( only 4 dollars...)
+
+// we tried to charge twice and got 2 R01 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^V1bsAr3eapW8E7ml3fbiCcZD3Ov1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'Cx7CXKgtKiZlIlM9O0xMK9LSx562'
+    and (date = date('2024-01-29'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'Cx7CXKgtKiZlIlM9O0xMK9LSx562' //and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+// [balance - amount - OutTransactions < 0] with income sufficiant
+
+// can see some NSF afterwards but overall good customer 
+
+// was his first payment 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^Cx7CXKgtKiZlIlM9O0xMK9LSx562^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'VYDCuPKIdQb0HnFLqsrXs2uqF563'
+    and (date = date('2024-01-11'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'VYDCuPKIdQb0HnFLqsrXs2uqF563' //and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// [balance - amount - OutTransactions < 0] with income sufficiant
+
+// from both accounts - this is relly wired he had 2 times the amount in his balance , had a 110129 expences and a 177418 income so at the end of this day he supposed to have a lot more then the amount 
+
+// only the repayment account also had enogh from for the income but without it (if trasacted later) then not enogh 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^VYDCuPKIdQb0HnFLqsrXs2uqF563^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'VYDCuPKIdQb0HnFLqsrXs2uqF563'
+    and (date = date('2024-01-11'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'VYDCuPKIdQb0HnFLqsrXs2uqF563' //and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// [balance - amount - OutTransactions < 0] with income sufficiant
+
+// from both accounts - this is relly wired he had 2 times the amount in his balance , had a 110129 expences and a 177418 income so at the end of this day he supposed to have a lot more then the amount  
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^VYDCuPKIdQb0HnFLqsrXs2uqF563^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like '0fCY0OyVFqOHRzBhED9cPI3uuJv1'
+    and (date = date('2024-01-04'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like '0fCY0OyVFqOHRzBhED9cPI3uuJv1' //and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// [balance - amount - OutTransactions < 0] with income sufficiant
+
+// together with his InTransaction would have sufficiant amount for amount....
+
+// a lot of NSF prior, less after.
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^0fCY0OyVFqOHRzBhED9cPI3uuJv1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'hhKYx0ceipZplFllPNPVXvMNAkj2'
+    and (date = date('2024-01-16'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'hhKYx0ceipZplFllPNPVXvMNAkj2' //and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// [balance - amount - spent < 0]
+
+// In beteen accounts transaction ... overall he did not had enogh money for payment
+
+// some NSF prior R01 but a lot after 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^hhKYx0ceipZplFllPNPVXvMNAkj2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'ocyYyeYrP6NGlBO4jnGBS9YqtW03'
+    and (date = date('2024-01-31'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'ocyYyeYrP6NGlBO4jnGBS9YqtW03' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// not understandble
+
+// [balance - amount - OutTransactions < 0] with income sufficiant
+
+//took a loan / got payments of loan that day.
+
+// some NSF prior R01.  
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ocyYyeYrP6NGlBO4jnGBS9YqtW03^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'AzEt9KlmCNXPnd4DQ9NOqztpnpS2'
+    and (date = date('2024-01-26'))
+;
+select time_collected , rent_transaction_id , amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'AzEt9KlmCNXPnd4DQ9NOqztpnpS2' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0]
+
+// drag payment behaind and we tried to take them both while he can pay one .... 
+
+// some NSF prior to R01.  
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^AzEt9KlmCNXPnd4DQ9NOqztpnpS2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'tOjQw4KAeYQeyC13C5nA9TG5Mdr1'
+    and (date = date('2024-01-5'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'tOjQw4KAeYQeyC13C5nA9TG5Mdr1' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0]
+
+// paid after 3 days
+
+// had a loan payment in that day 
+
+// got some NSF after but paid them as well 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^tOjQw4KAeYQeyC13C5nA9TG5Mdr1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'rMxlSWfMaSQmxeUt8SnHypO1fhY2'
+    and (date = date('2024-01-18'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'rMxlSWfMaSQmxeUt8SnHypO1fhY2' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0] 
+
+// had a loan payment in that day 
+
+// had a lot of NSF prior and after - looks like DQ 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^rMxlSWfMaSQmxeUt8SnHypO1fhY2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'ACwLnZ8ltJTHboWDx4s3UkNEv0g1'
+    and (date = date('2024-01-31'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'ACwLnZ8ltJTHboWDx4s3UkNEv0g1' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+// understandable - [balance - amount - spent < 0] 
+
+// had a some medical expences on that day 
+
+// good user paid all - without NSF - only 1 R01 and paid a day after .
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ACwLnZ8ltJTHboWDx4s3UkNEv0g1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'C8ZwrUAyWThNmKd2yXH3irADiVB2'
+    and (date = date('2024-01-16'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'C8ZwrUAyWThNmKd2yXH3irADiVB2' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// not understandable 
+
+// [balance - amount - OutTransactions < 0] with income sufficiant
+ 
+// In Between accounts tranaction  
+
+// tried to pay days after but got NSF - later paid fully 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^C8ZwrUAyWThNmKd2yXH3irADiVB2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'AY4qhnnFEmhwYms20bjGvEdMGJq1'
+    and (date = date('2024-01-18'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'AY4qhnnFEmhwYms20bjGvEdMGJq1' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+// not understandble ! 
+
+// balance - spent -amount >> 0 
+
+// only trasaction is gambeling
+
+// a lot of NSF afterwards 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^AY4qhnnFEmhwYms20bjGvEdMGJq1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'clvdCt5aBkZJPbVyS6T1yGQkfPr2'
+    and (date = date('2024-01-26'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'clvdCt5aBkZJPbVyS6T1yGQkfPr2' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+// not understandable 
+
+// balance - amount - spent > 0 (even with InTransactions)
+
+// Loan payments 
+
+// had some NSF afterwards - paid OnDemaned the missed payments
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^clvdCt5aBkZJPbVyS6T1yGQkfPr2^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'KPm7nATWBYNpm3i3jtBCugiNeME3'
+    and (date = date('2024-01-23'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'KPm7nATWBYNpm3i3jtBCugiNeME3' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+//  understandable 
+
+// balance - amount - spent < 0 
+
+// had some NSF afterwards - paid OnDemaned the missed payments
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^KPm7nATWBYNpm3i3jtBCugiNeME3^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like '2WFPm2lJfTa9J4wCgmtFKJoAqBo1'
+    and (date = date('2024-01-25'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like '2WFPm2lJfTa9J4wCgmtFKJoAqBo1' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+//  not understandable (only without InTransaction sufficiant)
+
+// balance - amount - outTransactions < 0 
+
+// had some NSF afterwards - paid OnDemaned the missed payments
+
+// a lot of NSF prior and after 
+
+// some differant return codes like R20
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^2WFPm2lJfTa9J4wCgmtFKJoAqBo1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'uJR0YOmfhnMF3Rh1gSqJmoMalBA3'
+    and (date = date('2024-01-03'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'uJR0YOmfhnMF3Rh1gSqJmoMalBA3' and year(time_collected) = 2024 and month(time_collected) >= 1 
+order by time_collected 
+
+//  not understandable (only without InTransaction sufficiant)
+
+// balance - amount - outTransactions < 0 
+
+// Loan payments & in between account transactions... 
+
+// HAd somthing that looked like R01 from different company
+
+// had some NSF afterwards - paid OnDemaned the missed payments
+
+// a lot of NSF  after !! 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^uJR0YOmfhnMF3Rh1gSqJmoMalBA3^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'rMkBWRdF0HOdicUo4DZs5Z5bMvj1'
+    and (date = date('2024-01-30'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'rMkBWRdF0HOdicUo4DZs5Z5bMvj1' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+//  not understandable (only without InTransaction sufficiant)
+
+// balance - amount - outTransactions < 0 
+
+// Loan payment to LVBLE
+
+// again 2 straghit payment problems on the 30.1.2024 R01 
+
+// a lot of NSF after first R01 03.01.2024
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^rMkBWRdF0HOdicUo4DZs5Z5bMvj1^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like 'V400Ezf686Zy4K88PrRdqaTADK03'
+    and (date = date('2024-01-04'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like 'V400Ezf686Zy4K88PrRdqaTADK03' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+//  not understandable (only without InTransaction sufficiant)
+
+// balance - amount - outTransactions < 0 
+
+// Loan payments and in between accounts transactions 
+
+// NSF prior and afterwards. 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^V400Ezf686Zy4K88PrRdqaTADK03^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+;
+// -----------------------------------------------------------------------------------------------------------
+select date, date_transacted,account_id, category, credit_category_detailed, original_description, merchant_name, amount
+from plaid_account_transaction
+where 
+    user_id like '5dtKkAYQr8PLIpsZIBgNNJnifty1'
+    and (date = date('2024-01-29'))
+;
+select time_collected , rent_transaction_id ,type, amount, scheduled_payment_id , status ,collection_failure_reason , s.return_code , RTTPA.paying_account_id
+from repay_transactions R 
+left join svb_transactions s 
+on s.repay_transaction_id = R.id
+left join repay_transaction_to_paying_account RTTPA
+on RTTPA.repay_transaction_id = R.id
+where user_id like '5dtKkAYQr8PLIpsZIBgNNJnifty1' and year(time_collected) = 2024 and month(time_collected) = 1 
+order by time_collected 
+
+// understandable 
+
+// balance - amount - spent < 0 
+
+// Loan payments and overdraft fees
+
+// NSF prior and afterwards. 
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^V400Ezf686Zy4K88PrRdqaTADK03^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

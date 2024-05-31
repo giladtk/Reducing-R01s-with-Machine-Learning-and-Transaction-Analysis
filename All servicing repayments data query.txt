@@ -1,0 +1,218 @@
+// final data set 
+with main as (
+                SELECT
+                        R.*,
+                        P.balance,
+                        P.time_created as time_created_balance, 
+                        ROW_NUMBER() OVER (PARTITION BY R.id ORDER BY P.time_created DESC) AS row_num,
+                        datediff(day,P.time_created,R.time_collected) as diff_d_rep_bal 
+                    FROM
+                        repay_transactions R
+                    LEFT JOIN
+                        repay_transaction_to_paying_account RA ON R.id = RA.repay_transaction_id
+                    LEFT JOIN
+                        plaid_historical_balance P ON P.user_id = R.user_id
+                            AND P.account_id = RA.paying_account_id
+                            AND P.time_created < R.time_collected
+                    left join 
+                        rent_transactions RT 
+                    on 
+                        R.rent_transaction_id = RT.id
+                    WHERE
+                        R.time_collected >= date('2023-10-01')
+                        and datediff(day,RT.rent_date,R.time_collected) < 40
+                        and R.collection_failure_reason is null 
+                        and R.rent_transaction_id is not null
+                    qualify row_num = 1 
+                         
+             ) ,
+    NSF_per_user AS (
+    SELECT
+        R.user_id,R.id, 
+        ROUND(SUM(CASE WHEN R2.collection_failure_reason LIKE 'NSF' THEN 1 ELSE 0 END) / COUNT(*)/10, 2)*10 AS user_nsf_prop
+    FROM
+        repay_transactions R
+    LEFT JOIN
+        repay_transactions R2 
+    ON 
+        R.user_id = R2.user_id 
+        AND R2.time_collected <= R.time_collected
+    WHERE
+        R.time_collected >= date('2023-10-01')
+        AND R.rent_transaction_id IS NOT NULL
+    GROUP BY
+        R.user_id, R.id
+    
+    ),
+NSF_per_rent AS (
+    SELECT
+        R.rent_transaction_id,
+        R.id, 
+        ROUND(SUM(CASE WHEN R2.collection_failure_reason LIKE 'NSF' THEN 1 ELSE 0 END) / COUNT(*) / 10, 2) * 10 AS         rent_nsf_prop
+    FROM
+        repay_transactions R
+    LEFT JOIN
+        repay_transactions R2 
+    ON 
+        R.rent_transaction_id = R2.rent_transaction_id 
+        AND R2.time_collected <= R.time_collected
+    WHERE
+        R.time_collected >= date('2023-10-01')
+        AND R.rent_transaction_id IS NOT NULL
+        AND R2.time_collected >= date('2023-10-01')
+        AND R2.rent_transaction_id IS NOT NULL
+
+    GROUP BY
+        R.rent_transaction_id,
+        R.id
+),
+prop_r01_user as 
+    (
+        select 
+            R5.id as repayment_id,
+            ROUND(SUM(CASE WHEN S5.return_code LIKE 'R01' THEN 1 ELSE 0 END) / COUNT(*) / 10, 2) * 10 AS user_r01_prop , count(*)
+        
+        from 
+            (select *
+            from 
+                repay_transactions R
+            WHERE
+                R.time_collected >= DATE('2023-10-1')
+                AND R.rent_transaction_id IS NOT NULL
+             ) as R5
+       
+        inner join 
+        
+            (select *
+            from 
+                repay_transactions R
+            WHERE
+                R.time_collected >= DATE('2023-10-1')
+                AND R.rent_transaction_id IS NOT NULL
+             ) as R6
+        on 
+            R6.user_id = R5.user_id 
+            and R6.time_collected < R5.time_collected
+        
+        inner join 
+        
+            svb_transactions S5
+        on 
+            R6.id = S5.repay_transaction_id
+        
+        group by 
+           
+            R5.id 
+    ),
+prior_payment_days_diff AS (
+    SELECT
+        R.id AS repayment_id, 
+        R.user_id,
+        R.time_collected,
+        DATEDIFF(days, R.time_collected, LAG(R.time_collected) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC)) AS days_since_previous_repayment,
+        CASE WHEN LAG(R.COLLECTION_FAILURE_REASON) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC) = 'NSF' THEN DATEDIFF(days, R.time_collected, LAG(R.time_collected) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC)) ELSE NULL END AS days_since_NSF,
+        CASE WHEN LAG(R.STATUS) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC) = 'Failed' THEN DATEDIFF(days, R.time_collected, LAG(R.time_collected) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC)) ELSE NULL END AS days_since_failed_payment,
+        CASE WHEN LAG(R.STATUS) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC) = 'Succeeded' THEN DATEDIFF(days, R.time_collected, LAG(R.time_collected) OVER (PARTITION BY R.user_id ORDER BY R.time_collected DESC)) ELSE NULL END AS days_since_succeeded_payment
+    FROM
+        repay_transactions R
+    WHERE
+        R.time_collected >= DATE('2023-10-1')
+        AND R.rent_transaction_id IS NOT NULL
+)
+    select 
+            M.amount , M.balance , M.user_id ,
+            M.status , S.return_code , M.collection_failure_reason,
+            PIT.institution_name ,
+            M.type , SI.payment_number ,
+            LB.state , LB.tenant_portal ,
+            LB.risk_score , LB.RENT_CYCLE_NUMBER ,
+            M.id , SI.payment_number , 
+            LB.installment_plan_changes , 
+            NSF_per_user.user_nsf_prop ,
+            NSF_per_rent.rent_nsf_prop ,
+            prop_r01_user.user_r01_prop ,
+            prior_payment_days_diff.days_since_previous_repayment ,
+            prior_payment_days_diff.days_since_succeeded_payment,
+            prior_payment_days_diff.days_since_failed_payment,
+            prior_payment_days_diff.days_since_NSF , 
+            dayofweek(M.time_collected) as week_day_collected , 
+            hour(M.time_collected) as hour_collected ,
+            datediff(year,U.DOB,getdate()) as age ,
+            datediff(day,M.time_created_balance,M.time_collected) as diff_d_rep_bal , 
+            datediff(day,RT.rent_date,M.time_collected) as diff_d_rep_rent ,
+            datediff(day,M.time_created,M.time_collected) as diff_d_rep_cre_col
+    
+    from main M
+    
+        left join 
+
+            prop_r01_user
+        on 
+             M.id = prop_r01_user.repayment_id
+
+        left join 
+
+            prior_payment_days_diff
+        on 
+             M.id = prior_payment_days_diff.repayment_id
+            
+        left join 
+
+            NSF_PER_USER
+        on 
+             M.id = NSF_per_user.id 
+            
+        left join    
+
+            NSF_PER_RENT
+        on   
+            M.id = NSF_PER_RENT.id 
+        
+        left join
+        
+            repay_transaction_to_paying_account as RA
+        on 
+            M.id = RA.repay_transaction_id
+            
+        left join 
+        
+            svb_transactions as S
+            on S.repay_transaction_id = M.id
+            
+        left join 
+        
+            rent_transactions as RT 
+        on 
+            RT.id = M.rent_transaction_id
+        
+        left join 
+
+            plaid_accounts as PA
+        on 
+            PA.id = RA.paying_account_id
+            
+        left join
+            
+            plaid_items as PIT   
+        on 
+            PA.plaid_item_id = PIT.id
+             
+        left join 
+            
+            user as U  
+        on
+            U.id = M.user_id        
+        left join 
+        
+            prod.bi.loan_book as LB
+        on
+            LB.loan_id = M.rent_transaction_id          
+       
+        left join 
+    
+            scheduled_installment_payment as SI 
+        on 
+            M.scheduled_payment_id = SI.id     
+
+;
+

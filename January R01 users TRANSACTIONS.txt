@@ -1,0 +1,125 @@
+;
+//ro1 users january 
+with r01_users as (
+                    select 
+                        R.user_id , RTTPA.paying_account_id ,
+                        R.time_created , R.time_collected,
+                        R.amount , 
+                        P.balance , p.time_created as time_created_balance , 
+                        ROW_NUMBER() OVER (PARTITION BY R.id ORDER BY P.time_created DESC) AS row_num,
+                        datediff(day,P.time_created,R.time_collected) as diff_d_rep_bal 
+                    from 
+                        repay_transactions R
+                    left join
+                        rent_transactions RT
+                    on
+                        R.rent_transaction_id=RT.id
+                    left join 
+                        svb_transactions S 
+                    on 
+                        S.repay_transaction_id = R.id
+                    left join 
+                        repay_transaction_to_paying_account as RTTPA
+                    on 
+                        RTTPA.repay_transaction_id = R.id
+                    left join 
+                        plaid_historical_balance P 
+                    on P.user_id = R.user_id
+                            and P.account_id = RTTPA.paying_account_id
+                            and P.time_created < R.time_collected
+                    where 
+                        date_trunc(month, R.time_created) = '2024-01-01'
+                        and datediff(day,RT.rent_date,R.time_collected) < 40
+                        and S.return_code like 'R01'
+                    qualify row_num = 1 
+
+                    )
+select 
+    RU.user_id ,
+    RU.time_collected as time_collected_repayment ,
+    RU.balance,
+    RU.amount,
+    RU.time_created_balance,
+    sum(P.amount) as total_spent ,
+    sum ( case when P.amount < 0 then p.amount else 0 end) as sum_in_transactions ,
+    sum ( case when P.amount > 0 then p.amount else 0 end) as sum_out_transactions ,
+    count(*) as number_of_transactions , 
+    min(P.date) as min_date_plaid , 
+    max(p.date) as max_date_plaid
+from 
+    r01_users RU
+left join 
+    plaid_account_transaction P
+
+on 
+    RU.user_id = P.user_id 
+    and P.date <= date(RU.time_collected)
+    and P.date >= date(RU.time_created_balance)
+group by 
+    RU.user_id , RU.time_collected ,RU.amount, RU.balance ,RU.time_created_balance
+
+    
+    
+    
+;
+//ro1 users and paying account january
+with r01_users as (
+                    select 
+                        R.user_id , RTTPA.paying_account_id ,
+                        R.time_created , R.time_collected,
+                        R.amount , 
+                        P.balance , p.time_created as time_created_balance , 
+                        ROW_NUMBER() OVER (PARTITION BY R.id ORDER BY P.time_created DESC) AS row_num,
+                        datediff(day,P.time_created,R.time_collected) as diff_d_rep_bal 
+                    from 
+                        repay_transactions R
+                    left join
+                        rent_transactions RT
+                    on
+                        R.rent_transaction_id=RT.id
+                    left join 
+                        svb_transactions S 
+                    on 
+                        S.repay_transaction_id = R.id
+                    left join 
+                        repay_transaction_to_paying_account as RTTPA
+                    on 
+                        RTTPA.repay_transaction_id = R.id
+                    left join 
+                        plaid_historical_balance P 
+                    on P.user_id = R.user_id
+                            and P.account_id = RTTPA.paying_account_id
+                            and P.time_created < R.time_collected
+                    where 
+                        date_trunc(month, R.time_created) = '2024-01-01'
+                        and datediff(day,RT.rent_date,R.time_collected) < 40
+                        and S.return_code like 'R01'
+                    qualify row_num = 1 
+
+                    )
+select 
+    RU.user_id ,RU.paying_account_id,
+    RU.time_collected as time_collected_repayment ,
+    RU.time_created_balance, 
+    RU.balance,
+    RU.amount,
+    sum(P.amount) as total_spent ,
+    sum ( case when P.amount < 0 then p.amount else 0 end) as sum_in_transactions ,
+    sum ( case when P.amount > 0 then p.amount else 0 end) as sum_out_transactions ,
+    count(*) as number_of_transactions , 
+    min(P.date) as min_date_plaid , 
+    max(p.date) as max_date_plaid , 
+    RU.balance - sum_out_transactions - RU.amount as without_income ,
+    RU.balance - total_spent - RU.amount as with_income 
+
+from 
+    r01_users RU
+inner join 
+    plaid_account_transaction P
+on 
+    RU.user_id = P.user_id 
+    and P.account_id = RU.paying_account_id
+    and P.date = date(RU.time_collected)
+group by 
+    RU.user_id , RU.time_collected ,RU.amount, RU.balance ,RU.time_created_balance , RU.paying_account_id
+;
