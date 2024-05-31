@@ -12,4 +12,4 @@ Using Python and sklearn, I developed rule-based models to create policies aimed
 **Analysis:** SQL Query Analysis
 I conducted thorough SQL query analyses to identify patterns and correlated events in the data that could explain the occurrence of R01s. One notable finding was a bug in the system handling multi-payments, which significantly reduced the R01 rate once addressed.
 
-[decision_tree5.pdf](https://github.com/user-attachments/files/15511357/decision_tree5.pdf)
+
