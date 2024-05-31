@@ -1,6 +1,7 @@
 # Reducing R01s with Machine Learning and Transaction Analysis
 
 # Overview
+
 During my tenure at a fintech company that offers short-term loans, I focused on addressing the issue of R01s—failed payment attempts due to insufficient funds. These failures are costly for both the company and the customers, as they incur significant bank fines.
 
 # In this paper, I present a two-pronged approach to tackle this problem through machine learning and data analysis.
